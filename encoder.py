@@ -88,10 +88,20 @@ def get_config():
         ids = [id for id in ids if not id.startswith(("K", "W"))]
         locations_tecci.extend(ids)
 
+    # Remove duplicates while preserving order
+    def remove_duplicates_preserve_order(lst):
+        seen = set()
+        result = []
+        for item in lst:
+            if item not in seen:
+                seen.add(item)
+                result.append(item)
+        return result
+    
     config_data = {
         "ssh": ssh_config,
-        "coop": {"locations": list(set(locations))},
-        "tecci": {"locations": list(set(locations_tecci))}
+        "coop": {"locations": remove_duplicates_preserve_order(locations)},
+        "tecci": {"locations": remove_duplicates_preserve_order(locations_tecci)}
     }
 
     with open("config.json", "w") as f:

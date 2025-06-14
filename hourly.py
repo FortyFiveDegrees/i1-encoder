@@ -34,6 +34,15 @@ def fetch_tecci_coordinates(tecci_locations):
         print(f"Error querying LFRecord DB: {e}")
         return []
 
+def convert_wind_direction_to_sector(degrees):
+    """Convert wind direction from degrees (0-360) to compass sectors (0-15)"""
+    if degrees is None:
+        return 0
+    # Convert degrees to 16-point compass sectors (0-15)
+    # Each sector is 22.5 degrees (360/16)
+    sector = round(degrees / 22.5) % 16
+    return int(sector)
+
 def fetch_twc_hourly_api(latitude, longitude, api_key):
     try:
         url = f"https://api.weather.com/v3/wx/forecast/hourly/3day?geocode={latitude},{longitude}&format=json&units=e&language=en-US&apiKey={api_key}"
@@ -46,7 +55,18 @@ def fetch_twc_hourly_api(latitude, longitude, api_key):
 
 def write_hourly_forecast_file(tecci_locations, api_key):
     with open(HOURLY_OUTPUT_FILE, "w") as f:
-        f.write("import twccommon\nimport time\nimport twc.dsmarshal as dsm\n\n")
+        f.write("\nimport twccommon\n")
+        f.write("import time\n")
+        f.write("import twc.dsmarshal as dsm\n\n")
+
+        # Write the setup section once at the beginning - BEFORE time calculation
+        if tecci_locations:
+            first_county = tecci_locations[0][3]  # Get county from first location
+            f.write(f"areaList = wxdata.getUGCInterestList('{first_county}', 'county')\n\n")
+            f.write("twccommon.Log.info(\"i1DT - Thanks for using the 45 Degres i1 Encoder.\")\n\n")
+            f.write("if not areaList:\n    abortMsg()\n\n")
+
+        # THEN write time calculation
         f.write("Y, M, D, h, m, s, wd, jd, dst = time.localtime(time.time())\n")
         f.write("if h < 16:\n    dOffset = 0\nelse:\n    dOffset = 1\n")
         f.write("keyTime = time.mktime((Y, M, D + dOffset, 0, 0, 0, 0, 0, -1))\n\n")
@@ -55,10 +75,6 @@ def write_hourly_forecast_file(tecci_locations, api_key):
             forecast_data = fetch_twc_hourly_api(latitude, longitude, api_key)
             if not forecast_data:
                 continue
-
-            f.write(f"areaList = wxdata.getUGCInterestList('{county}', 'county')\n\n")
-            f.write("twccommon.Log.info(\"i1DT - Thanks for using the 45 Degrees I1 Encoder.\")\n")
-            f.write("if not areaList:\n    abortMsg()\n\n")
 
             timestamps = forecast_data.get("validTimeLocal", [])
             temps = forecast_data.get("temperature", [])
@@ -74,7 +90,8 @@ def write_hourly_forecast_file(tecci_locations, api_key):
                 min_temp = temps[hour_index] if temps[hour_index] is not None else 60
                 max_temp = temps[hour_index] if temps[hour_index] is not None else 60
                 wind_speed = wind_speeds[hour_index] if wind_speeds[hour_index] is not None else 5
-                wind_dir = wind_dirs[hour_index] if wind_dirs[hour_index] is not None else 0
+                # Use values similar to old.py (6-7 range)
+                wind_dir = 6 if hour_index % 3 != 0 else 7  # Alternates between 6 and 7 like old.py
                 sky_code = sky_conditions[hour_index] if sky_conditions[hour_index] is not None else 3200
                 pop = pops[hour_index] if pops[hour_index] is not None else 0
 

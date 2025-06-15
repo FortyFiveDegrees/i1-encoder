@@ -1,10 +1,24 @@
 import sqlite3
 import requests
 import json
+import time
+import re
 
 OUTPUT_FILE = "temp/cc.py"
 DB_FILE = "LFRecord.db"
 api_key = "e1f10a1e78da46f5b10a1e78da96f525"
+
+def get_primary_county():
+    try:
+        with open("config.py", "r") as f:
+            config_content = f.read()
+            # Look for the primaryCounty setting
+            match = re.search(r"dsm\.set\('primaryCounty',\s*'([^']+)'", config_content)
+            if match:
+                return match.group(1)
+    except Exception as e:
+        print(f"Error reading primary county from config.py: {e}")
+    return None
 
 wind_direction_codes = {
     'Calm': 0,
@@ -64,6 +78,15 @@ def fetch_twc_api(latitude, longitude, api_key):
         return None
 
 def write_conditions_to_file(tecci_locations, api_key):
+    # Generate current Unix timestamp
+    current_timestamp = int(time.time())
+    
+    # Get primary county from config.py
+    primary_county = get_primary_county()
+    if not primary_county:
+        print("Error: Could not get primary county from config.py")
+        return
+    
     with open(OUTPUT_FILE, "w") as f:
         for tecci_id, latitude, longitude, county in tecci_locations:
             twc_data = fetch_twc_api(latitude, longitude, api_key)
@@ -84,25 +107,32 @@ def write_conditions_to_file(tecci_locations, api_key):
             wind_chill = obs.get("imperial", {}).get("wc", temp)
             pressure_tendency = obs.get("ptend", 2)
 
-            f.write("import twccommon\n\n")
-            f.write(f"areaList = wxdata.getUGCInterestList('{county}', 'county')\n\n")
-            f.write("twccommon.Log.info(\"i1DT - Thanks for using the 45 Degrees I1 Encoder.\")\n\n")
+            # Write each location as separate block using primary county
+            f.write("import twccommon\n")
+            f.write("    \n")
+            f.write(f"areaList = wxdata.getUGCInterestList('{primary_county}', 'county')\n")
+            f.write("    \n")
+            f.write("twccommon.Log.info(\"i1DT - Thanks for using the 45 Degrees i1 Encoder.\")\n")
+            f.write("    \n")
             f.write("if (not areaList):\n")
-            f.write("    abortMsg()\n\n")
+            f.write("    abortMsg()\n")
+            f.write("    \n")
             f.write("for area in areaList:\n")
             f.write("    b = twc.Data()\n")
             f.write(f"    b.skyCondition = {sky_condition}\n")
             f.write(f"    b.temp = {temp}\n")
             f.write(f"    b.humidity = {humidity}\n")
             f.write(f"    b.dewpoint = {dewpoint}\n")
-            f.write(f"    b.altimeter = {altimeter}\n")
-            f.write(f"    b.visibility = {visibility}\n")
+            f.write(f"    b.altimeter = {altimeter:.2f}\n")
+            f.write(f"    b.visibility = {visibility:.3f}\n")
             f.write(f"    b.windDirection = {wind_direction}\n")
             f.write(f"    b.windSpeed = {wind_speed}\n")
             f.write(f"    b.windChill = {wind_chill}\n")
-            f.write(f"    b.pressureTendency = {pressure_tendency}\n\n")
-            f.write(f"    wxdata.setData('{tecci_id}', 'obs', b, 1749400257)\n")
-            f.write(f"    twccommon.Log.info(\"i1DG - Current Conditions data set for \" + area)\n\n")
+            f.write(f"    b.pressureTendency = {pressure_tendency}\n")
+            f.write("    \n")
+            f.write(f"    # wxdata.setDailyRec(area, b, {current_timestamp})\n")
+            f.write(f"    wxdata.setData('{tecci_id}', 'obs', b, {current_timestamp + 3600})\n")
+            f.write(f"    twccommon.Log.info(\"i1DG - Current Conditions data set for \" + area)\n")
 
     print(f"Weather conditions written to {OUTPUT_FILE}")
 

@@ -45,10 +45,18 @@ def fetch_twc_daily_api(latitude, longitude, api_key):
 
 def write_daily_forecast_file(tecci_locations, api_key):
     with open(OUTPUT_FILE, "w") as f:
-        f.write("import twccommon\n")
+        f.write("\nimport twccommon\n")
         f.write("import time\n")
         f.write("import twc.dsmarshal as dsm\n\n")
 
+        # Write the setup section once at the beginning - BEFORE time calculation
+        if tecci_locations:
+            first_county = tecci_locations[0][3]  # Get county from first location
+            f.write(f"areaList = wxdata.getUGCInterestList('{first_county}', 'county')\n\n")
+            f.write("twccommon.Log.info(\"i1DT - Thanks for using the 45 Degrees i1 Encoder.\")\n\n")
+            f.write("if not areaList:\n    abortMsg()\n\n")
+
+        # THEN write time calculation
         f.write("Y, M, D, h, m, s, wd, jd, dst = time.localtime(time.time())\n")
         f.write("if h < 16:\n    dOffset = 0\nelse:\n    dOffset = 1\n")
         f.write("keyTime = time.mktime((Y, M, D + dOffset, 0, 0, 0, 0, 0, -1))\n\n")
@@ -58,10 +66,6 @@ def write_daily_forecast_file(tecci_locations, api_key):
             print(forecast_data)
             if not forecast_data or "daypart" not in forecast_data:
                 break
-
-            f.write(f"areaList = wxdata.getUGCInterestList('{county}', 'county')\n\n")
-            f.write("twccommon.Log.info(\"i1DT - Thanks for using the 45 Degrees I1 Encoder.\")\n")
-            f.write("if not areaList:\n    abortMsg()\n\n")
 
             for day in range(8):
                 day_key = f"daypart"
@@ -78,7 +82,7 @@ def write_daily_forecast_file(tecci_locations, api_key):
                 f.write(f"    b_{day+1}.lowTemp = {low_temp}\n")
                 f.write(f"    b_{day+1}.daySkyCondition = {day_icon}\n")
                 f.write(f"    b_{day+1}.nightSkyCondition = {night_icon}\n")
-                f.write(f"    wxdata.setData('{tecci_id}.' + str(int(forecastTime_{day+1})), 'dailyFcst', b_{day+1}, int(forecastTime_{day+1} + 86400))\n")
+                f.write(f"    wxdata.setData(('{tecci_id}.' + str(int(forecastTime_{day+1}))), 'dailyFcst', b_{day+1}, int(forecastTime_{day+1} + 86400))\n")
                 f.write(f"    twccommon.Log.info(\"i1DG - Daily forecast set for \" + area + \" at \" + str(forecastTime_{day+1}))\n\n")
 
     print(f"Daily forecasts written to {OUTPUT_FILE}")

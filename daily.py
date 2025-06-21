@@ -81,7 +81,7 @@ def write_daily_forecast_file(tecci_locations, api_key):
                 f.write(f"    b_{day+1}.highTemp = {high_temp}\n")
                 f.write(f"    b_{day+1}.lowTemp = {low_temp}\n")
                 f.write(f"    b_{day+1}.daySkyCondition = {day_icon}\n")
-                f.write(f"    b_{day+1}.nightSkyCondition = {night_icon}\n")
+                f.write(f"    b_{day+1}.eveningSkyCondition = {night_icon}\n")
                 f.write(f"    wxdata.setData(('{tecci_id}.' + str(int(forecastTime_{day+1}))), 'dailyFcst', b_{day+1}, int(forecastTime_{day+1} + 86400))\n")
                 f.write(f"    twccommon.Log.info(\"i1DG - Daily forecast set for \" + area + \" at \" + str(forecastTime_{day+1}))\n\n")
 

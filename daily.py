@@ -53,7 +53,7 @@ def write_daily_forecast_file(tecci_locations, api_key):
         if tecci_locations:
             first_county = tecci_locations[0][3]  # Get county from first location
             f.write(f"areaList = wxdata.getUGCInterestList('{first_county}', 'county')\n\n")
-            f.write("twccommon.Log.info(\"i1DT - Thanks for using the 45 Degrees i1 Encoder.\")\n\n")
+            f.write("twccommon.Log.info(\"i1DT - You are receiving IntelliStar 1 data from Rainwater WX.\")\n\n")
             f.write("if not areaList:\n    abortMsg()\n\n")
 
         # THEN write time calculation
@@ -70,10 +70,19 @@ def write_daily_forecast_file(tecci_locations, api_key):
             for day in range(8):
                 day_key = f"daypart"
                 day_part = forecast_data.get("daypart", {})
-                high_temp = forecast_data.get("temperatureMax", [None]*8)[day] or 70
-                low_temp = forecast_data.get("temperatureMin", [None]*8)[day] or 55
-                day_icon = forecast_data.get("daypart", {})[0].get("iconCodeExtend", [3200]*16)[day*2] or 3200
-                night_icon = forecast_data.get("daypart", {})[0].get("iconCodeExtend", [3200]*16)[day*2+1] or 3100
+                # Calculate data index using the current hour
+                current_hour = time.localtime().tm_hour
+                current_offset = 1 if current_hour >= 16 else 0
+                
+                # For high temp and day icon, use offset after 4 PM
+                day_data_index = day + current_offset
+                # For low temp and night icon, always use current day
+                night_data_index = day
+                
+                high_temp = forecast_data.get("temperatureMax", [None]*9)[day_data_index] or 70
+                low_temp = forecast_data.get("temperatureMin", [None]*9)[night_data_index] or 55
+                day_icon = forecast_data.get("daypart", {})[0].get("iconCodeExtend", [3200]*18)[day_data_index*2] or 3200
+                night_icon = forecast_data.get("daypart", {})[0].get("iconCodeExtend", [3200]*18)[night_data_index*2+1] or 3100
 
                 f.write("for area in areaList:\n")
                 f.write(f"    forecastTime_{day+1} = keyTime + ({day} * 86400)\n")

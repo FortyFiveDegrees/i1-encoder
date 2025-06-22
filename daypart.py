@@ -34,10 +34,7 @@ def fetch_twc_daily_api(lat, lon, api_key):
 def write_daypart_forecast_file(tecci_locations, api_key):
     # Calculate the base time for hardcoded timestamps
     Y, M, D, h, m, s, wd, jd, dst = time.localtime(time.time())
-    if h < 16:
-        dOffset = 0
-    else:
-        dOffset = 1
+    dOffset = 0  # Always use offset of 0
     keyTime = int(time.mktime((Y, M, D + dOffset, 5, 0, 0, 0, 0, -1)))
     
     with open(OUTPUT_FILE, "w") as f:
@@ -73,7 +70,7 @@ def write_daypart_forecast_file(tecci_locations, api_key):
             f.write("twccommon.Log.info(\"i1DT - Thanks for using the 45 Degrees i1 Encoder.\")\n\n")
             
             f.write("Y, M, D, h, m, s, wd, jd, dst = time.localtime(time.time())\n")
-            f.write("if h < 16:\n    dOffset = 0\nelse:\n    dOffset = 1\n\n")
+            f.write("dOffset = 0  # Always use offset of 0\n\n")
             f.write("keyTime = time.mktime((Y, M, D + dOffset, 5, 0, 0, 0, 0, -1))\n\n")
             f.write(f"numDayparts = {num_dayparts}\n\n")
             

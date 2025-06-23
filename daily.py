@@ -72,9 +72,10 @@ def write_daily_forecast_file(tecci_locations, api_key):
                 day_part = forecast_data.get("daypart", {})
                 # Calculate data index using the current hour
                 current_hour = time.localtime().tm_hour
-                current_offset = 1 if current_hour >= 16 else 0
+                # Set offset if time is between 12 AM - 4 AM OR after 4 PM
+                current_offset = 1 if (current_hour >= 16 or current_hour < 4) else 0
                 
-                # For high temp and day icon, use offset after 4 PM
+                # For high temp and day icon, use offset during early morning and evening hours
                 day_data_index = day + current_offset
                 # For low temp and night icon, always use current day
                 night_data_index = day

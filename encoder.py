@@ -55,6 +55,11 @@ def send_command(command):
     print(f"i1DT - Sent command: {command}")
     shell.send(command + "\n")
 
+def sync_time():
+    now = datetime.now()
+    freebsd_timestamp = now.strftime("%m%d%H%M%Y.%S") # Generate current FreeBSD timestamp
+    print("i1DT - Syncing Time, Timestamp is:" + freebsd_timestamp)
+    send_command("date " + freebsd_timestamp) # Sync the time of the VM
 
 def get_config():
     ensure_temp_dir()
@@ -144,6 +149,7 @@ def start_schedules():
             ensure_temp_dir()
             cc.main()
             upload_and_run_temp_files()
+            sync_time() # run it here as sort of a heartbeat? (like how TWC sends down heartbeats to keep units in time-sync)
             time.sleep(600)
 
     def run_hourly_daily_daypart():
@@ -162,6 +168,7 @@ def start_schedules():
 
 
 if __name__ == "__main__":
+    sync_time()
     start_schedules()
     while True:
         time.sleep(1)

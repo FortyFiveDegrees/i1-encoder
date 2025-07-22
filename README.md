@@ -1,8 +1,8 @@
 # i1 Data Encoder
 
-### This is the all-locally hosted version of the encoder. Please make issues/pull requests if anything is not working. We want people to contribute and be open with their creations to the i1, and by contributing to this project, you can help with that.
+### The python version uses a local server, which is recommended as the nodeJS version uses a backend that hasn't been updated with latest fixes. also, update coming soon with quite a few new features! stay tuned!
 
-This encoder was made by Dalk with help from April (mewtek).
+This encoder was made by Dalk with help from April (mewtek) and WxChaser.
 
 Included are both a nodejs and python3 version, made to run on any device on the same network as I1.
 

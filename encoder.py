@@ -10,6 +10,7 @@ import cc
 import hourly
 import daily
 import daypart
+import bulletin
 
 with open("config.json", "r") as f:
     ssh_config = json.load(f).get("ssh", {})
@@ -162,8 +163,18 @@ def start_schedules():
             upload_and_run_temp_files()
             time.sleep(1800)
 
+    def run_bulletin_and_radar():
+        while True:
+            ensure_temp_dir()
+            bulletin.gen_bulletin()
+            # radar would go here
+            upload_and_run_temp_files()
+            time.sleep(1800)
+
+
     threading.Thread(target=run_cc, daemon=True).start()
     threading.Thread(target=run_hourly_daily_daypart, daemon=True).start()
+    threading.Thread(target=run_bulletin_and_radar, daemon=True).start()
 
     print("i1DT - Data generation & upload schedules started.")
 

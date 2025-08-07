@@ -28,11 +28,17 @@ def gen_bulletin():
         for alert in warning_json:
             # get needed data
             data = alert['properties']
-            txt = data['description']; txt = txt.replace('\n', ' ') # remove new lines and replace with space
-            effect_time = epoch_calc(data['effective'])
-            finish_time = epoch_calc(data['expires'])
-            geocode = data['geocode']['UGC'][0] # pretty sure this is right..
-            pil = "SVR" # temp
+            try:
+                txt = data['description']; txt = txt.replace('\n', ' ') # remove new lines and replace with space
+                effect_time = epoch_calc(data['effective'])
+                finish_time = epoch_calc(data['expires'])
+                geocode = data['geocode']['UGC'][0] # pretty sure this is right..
+                pil = data['eventCode']['NationalWeatherService'][0]
+            except:
+                # skip current alert if improper data
+                # this happens with the "please ignore" test alerts, as they don't have any geocoding
+                print("i1DT - Skipping Invalid Bulletin")
+                continue
 
             # write to file
             f.write("# ALERT\nimport time\nimport twccommon\n")
@@ -47,4 +53,3 @@ def gen_bulletin():
             f.write(f"  b.dispExpiration = {finish_time}\n") # expire time
             f.write(f"  b.group = group\n  b.text = txt\n")
             f.write(f"  exp = {finish_time}\n") # expire time again
-            f.write(f"  wxdata.setBulletin(area, b, exp)\n\n")

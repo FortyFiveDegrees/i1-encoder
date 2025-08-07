@@ -1,12 +1,7 @@
 # i1 Data Encoder
+Data encoder for the domestic Intellistar 1.
 
-### The python version uses a local server, which is recommended as the nodeJS version uses a backend that hasn't been updated with latest fixes. also, update coming soon with quite a few new features! stay tuned!
-
-This encoder was made by Dalk with help from April (mewtek) and WxChaser.
-
-Included are both a nodejs and python3 version, made to run on any device on the same network as I1.
-
-**The python version is the ONLY one that has locally hosted data processing.**
+This encoder was made by Dalk with help from April (mewtek), Flybotworld (ClassicalExplosion), and WxChaser.
 
 This uses SSH to communicate with the i1 to send/receive data.
 

@@ -4,7 +4,7 @@ import json
 import time
 
 DB_FILE = "LFRecord.db"
-api_key = "e1f10a1e78da46f5b10a1e78da96f525"
+import configparser; api_key = (lambda cp=configparser.ConfigParser(): (cp.read('config.ini'), cp.get('ENV', 'TWCAPI'))[-1])()
 DAILY_OUTPUT_FILE = "temp/daily.py"
 HOURLY_OUTPUT_FILE = "temp/hourly.py"
 

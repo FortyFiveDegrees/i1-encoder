@@ -11,6 +11,7 @@ import hourly
 import daily
 import daypart
 import bulletin
+import radar
 
 with open("config.json", "r") as f:
     ssh_config = json.load(f).get("ssh", {})
@@ -24,6 +25,9 @@ def ensure_temp_dir():
     if not os.path.exists("temp"):
         os.makedirs("temp")
 
+def ensure_radar_dir():
+    if not os.path.exists("radar"):
+        os.makedirs("radar")
 
 def connect_ssh():
     global ssh_client, shell, ssh_connected
@@ -117,6 +121,19 @@ def get_config():
     print("i1DT - Config parsed and config.json written.")
     return config_data
 
+def upload_radar_files():
+    send_command("rm -f /twc/data/volatile/images/radar/us/*") # delete expired radar frames
+    transport = paramiko.Transport((ssh_config["hostname"], ssh_config["port"]))
+    transport.connect(username=ssh_config["username"], password=ssh_config["password"])
+    sftp = paramiko.SFTPClient.from_transport(transport)
+
+    for file_name in os.listdir("radar"):
+            local_path = os.path.join("radar", file_name)
+            remote_path = f"/twc/data/volatile/images/radar/us/{file_name}"
+            sftp.put(local_path, remote_path)
+            print(f"i1DT - Radar {file_name} Uploaded")
+
+    time.sleep(0.5)
 
 def upload_and_run_temp_files():
     ensure_temp_dir()
@@ -166,10 +183,12 @@ def start_schedules():
     def run_bulletin_and_radar():
         while True:
             ensure_temp_dir()
+            ensure_radar_dir()
             bulletin.gen_bulletin()
-            # radar would go here
+            radar.get_radar()
             upload_and_run_temp_files()
-            time.sleep(1800)
+            upload_radar_files()
+            time.sleep(300)
 
 
     threading.Thread(target=run_cc, daemon=True).start()

@@ -2,3 +2,5 @@ paramiko
 requests
 schedule
 datetime
+beautifulsoup4
+pillow

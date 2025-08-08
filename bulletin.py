@@ -53,3 +53,4 @@ def gen_bulletin():
             f.write(f"  b.dispExpiration = {finish_time}\n") # expire time
             f.write(f"  b.group = group\n  b.text = txt\n")
             f.write(f"  exp = {finish_time}\n") # expire time again
+            f.write(f"  wxdata.setBulletin(area, b, exp)\n\n")

@@ -17,7 +17,8 @@ def epoch_calc(NWS_TIME):
 
 def gen_bulletin():
     # get all us warnings
-    headers = {'User-Agent': 'python-requests/2.32.4 (i1-encoder, github.com/FortyFiveDegrees/i1-encoder)'}
+    user_agent = requests.utils.default_user_agent()
+    headers = {'User-Agent': f'{user_agent} (i1-encoder, github.com/FortyFiveDegrees/i1-encoder)'}
     warning_json = requests.get("https://api.weather.gov/alerts/active", headers=headers); warning_json = warning_json.json()
     warning_json = warning_json['features'] # filter to just alerts
 

@@ -1,9 +1,7 @@
-import asyncio
 import collections
 from genericpath import exists
 import gzip
 from multiprocessing import Pool
-import aiohttp
 import json
 import time as epochTime
 import requests
@@ -36,32 +34,30 @@ sys.path.append("./radar")
 from radar_util import *
 import bit
 
-async def getValidTimestamps(boundaries:ImageBoundaries) -> list:
+def getValidTimestamps(boundaries:ImageBoundaries) -> list:
     """Gets all valid UNIX timestamps for the TWCRadarMosaic product """
     l.info("Getting timestamps for the radar..")
     times = []
 
-    async with aiohttp.ClientSession() as session:
-        url = "https://api.weather.com/v3/TileServer/series/productSet?apiKey=e1f10a1e78da46f5b10a1e78da96f525&filter=twcRadarMosaic"
-        async with session.get(url) as r:
-            response = await r.json()
+    url = "https://api.weather.com/v3/TileServer/series/productSet?apiKey=e1f10a1e78da46f5b10a1e78da96f525&filter=twcRadarMosaic"
+    response = requests.get(url).json()
 
-            for t in range(0, len(response['seriesInfo']['twcRadarMosaic']['series'])):
+    for t in range(0, len(response['seriesInfo']['twcRadarMosaic']['series'])):
 
-                if (t <= 35):
-                    time = response['seriesInfo']['twcRadarMosaic']['series'][t]['ts']
-                    
-                    # Don't add frames that aren't at the correct interval
-                    if (time % boundaries.ImageInterval != 0):
-                        l.debug(f"Ignoring {time} -- Not at the correct frame interval.")
-                        continue
+        if (t <= 35):
+            time = response['seriesInfo']['twcRadarMosaic']['series'][t]['ts']
+            
+            # Don't add frames that aren't at the correct interval
+            if (time % boundaries.ImageInterval != 0):
+                l.debug(f"Ignoring {time} -- Not at the correct frame interval.")
+                continue
 
-                    # Don't add frames that are expired
-                    if (time < (datetime.utcnow().timestamp() - epochTime.time()) / 1000 - boundaries.Expiration):
-                        l.debug(f"Ignoring {time} -- Expired.")
-                        continue
+            # Don't add frames that are expired
+            if (time < (datetime.utcnow().timestamp() - epochTime.time()) / 1000 - boundaries.Expiration):
+                l.debug(f"Ignoring {time} -- Expired.")
+                continue
 
-                    times.append(time)
+            times.append(time)
 
     return times
 
@@ -153,8 +149,8 @@ def convertPaletteToWXPro(filepath:str):
 
     
     rainColors = [
-        Color('rgb(64,204,85'), # lightest green
-        Color('rgb(0,153,0'), # med green
+        Color('rgb(64,204,85)'), # lightest green
+        Color('rgb(0,153,0)'), # med green
         Color('rgb(0,102,0)'), # darkest green
         Color('rgb(191,204,85)'), # yellow
         Color('rgb(191,153,0)'), # orange
@@ -200,7 +196,7 @@ def convertPaletteToWXPro(filepath:str):
     img.opaque_paint(Color('rgb(110,203,212)'), snowColors[1], 7000.0)
     img.opaque_paint(Color('rgb(82,159,170)'), snowColors[2], 7000.0)
     img.opaque_paint(Color('rgb(40,93,106)'), snowColors[3], 7000.0)
-    img.opaque_paint(Color('rgb(13,49,64)'), snowColors[3]), 7000.0
+    img.opaque_paint(Color('rgb(13,49,64)'), snowColors[3], 7000.0)
 
     img.compression = 'lzw'
     img.save(filename=filepath)
@@ -213,7 +209,7 @@ def getTime(timestamp) -> str:
     return str(time)
 
 
-async def makeRadarImages():
+def makeRadarImages():
     """ Creates proper radar frames for the i2 """
     l.info("Downloading frames for the Regional Radar...")
     
@@ -226,7 +222,7 @@ async def makeRadarImages():
     lowerRight:LatLong = boundaries.GetLowerRight()
 
     CalculateBounds(upperRight, lowerLeft, upperLeft, lowerRight)
-    times = await getValidTimestamps(boundaries)
+    times = getValidTimestamps(boundaries)
 
     # Get rid of invalid radar frames 
     if os.path.exists(OUTPUT_DIR):
@@ -358,4 +354,4 @@ async def makeRadarImages():
 
 
 if __name__ == "__main__":
-    asyncio.run(makeRadarImages())
+    makeRadarImages()

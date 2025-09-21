@@ -205,13 +205,12 @@ def start_schedules():
             upload_and_run_temp_files()
             time.sleep(1800)
 
-    async def radar_loop():
+    def radar_loop():
         while True:
-            await asyncio.sleep(15)
-            await radar.makeRadarImages()
-            await load_radar()
-            await asyncio.sleep(3600)
-
+            time.sleep(15)
+            radar.makeRadarImages()
+            load_radar()
+            time.sleep(3600)
 
     def bulletin_loop():
         while True:
@@ -223,7 +222,7 @@ def start_schedules():
     threading.Thread(target=run_cc, daemon=True).start()
     threading.Thread(target=run_hourly_daily_daypart, daemon=True).start()
     threading.Thread(target=bulletin_loop, daemon=True).start()
-    asyncio.run(radar_loop())
+    threading.Thread(target=radar_loop, daemon=True).start()
 
     print("i1DT - Data generation & upload schedules started.")
 

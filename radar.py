@@ -361,7 +361,6 @@ def gen_radarload_files():
             outpath = os.path.join(output_dir, f"RADARLOAD_{base}.py")
 
             with open(outpath, "w") as f:
-                f.write("import wxdata\n\n")
                 f.write(
                     f"wxdata.setImageData('radar.us', '/twc/data/volatile/images/radar/us/{filename}')\n"
                 )
@@ -371,3 +370,4 @@ def gen_radarload_files():
 
 if __name__ == "__main__":
     makeRadarImages()
+    gen_radarload_files()

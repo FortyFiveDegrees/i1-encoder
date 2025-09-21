@@ -168,11 +168,12 @@ def load_bulletins():
 
 def load_radar():
     send_command("rm -f /twc/data/volatile/images/radar/us/*") # delete expired radar frames
+    send_command("rm /home/dgadmin/RADARLOAD_*") # delete expired radar load scripts
     transport = paramiko.Transport((ssh_config["hostname"], ssh_config["port"]))
     transport.connect(username=ssh_config["username"], password=ssh_config["password"])
     sftp = paramiko.SFTPClient.from_transport(transport)
 
-    for file_name in os.listdir("radar"):
+    for file_name in os.listdir("radar"): # upload radar frames
             local_path = os.path.join("radar", file_name)
             remote_path = f"/twc/data/volatile/images/radar/us/{file_name}"
             sftp.put(local_path, remote_path)
@@ -181,6 +182,17 @@ def load_radar():
 
     time.sleep(0.5)
 
+    for file_name in os.listdir("radar_temp"): # radar load script handler
+            local_path = os.path.join("radar_temp", file_name)
+            remote_path = f"/home/dgadmin/{file_name}"
+            sftp.put(local_path, remote_path)
+            print(f"i1DT - Radar Load Script {file_name}")
+            os.remove(local_path)
+            send_command(f"runomni /twc/util/loadSCMTconfig.pyc {remote_path}")
+            time.sleep(0.5)
+            
+    # cleanup
+    shutil.rmtree("radar_temp", ignore_errors=True)
 
 def start_schedules():
     config = get_config()
@@ -209,6 +221,7 @@ def start_schedules():
         while True:
             time.sleep(15)
             radar.makeRadarImages()
+            radar.gen_radarload_files()
             load_radar()
             time.sleep(3600)
 

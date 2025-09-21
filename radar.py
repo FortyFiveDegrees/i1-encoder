@@ -348,7 +348,23 @@ def makeRadarImages():
 
     l.info("Downloaded and sent Regional Radar frames!")
 
+def gen_radarload_files():
+    input_dir = "radar"
+    output_dir = "radar_temp"
 
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    for filename in os.listdir(input_dir):
+        if filename.lower().endswith(".tif"):
+            base, _ = os.path.splitext(filename)
+            outpath = os.path.join(output_dir, f"RADARLOAD_{base}.py")
+
+            with open(outpath, "w") as f:
+                f.write("import wxdata\n\n")
+                f.write(
+                    f"wxdata.setImageData('radar.us', '/twc/data/volatile/images/radar/us/{filename}')\n"
+                )
 
 # print(getTime(1665880800))
 

@@ -6,7 +6,7 @@ import re
 
 OUTPUT_FILE = "temp/cc.py"
 DB_FILE = "LFRecord.db"
-api_key = "e1f10a1e78da46f5b10a1e78da96f525"
+import configparser; api_key = (lambda cp=configparser.ConfigParser(): (cp.read('config.ini'), cp.get('ENV', 'TWCAPI'))[-1])()
 
 def get_primary_county():
     try:

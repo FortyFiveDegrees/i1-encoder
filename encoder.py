@@ -5,11 +5,14 @@ import json
 import time
 import threading
 from datetime import datetime, timedelta
+import asyncio
 
 import cc
 import hourly
 import daily
 import daypart
+import bulletin
+import radar
 
 with open("config.json", "r") as f:
     ssh_config = json.load(f).get("ssh", {})
@@ -23,6 +26,9 @@ def ensure_temp_dir():
     if not os.path.exists("temp"):
         os.makedirs("temp")
 
+def ensure_radar_dir():
+    if not os.path.exists("radar"):
+        os.makedirs("radar")
 
 def connect_ssh():
     global ssh_client, shell, ssh_connected
@@ -116,7 +122,6 @@ def get_config():
     print("i1DT - Config parsed and config.json written.")
     return config_data
 
-
 def upload_and_run_temp_files():
     ensure_temp_dir()
     transport = paramiko.Transport((ssh_config["hostname"], ssh_config["port"]))
@@ -138,6 +143,56 @@ def upload_and_run_temp_files():
     sftp.close()
     transport.close()
 
+def load_bulletins():
+    ensure_temp_dir()
+    send_command("rm /home/dgadmin/BULLETIN_*")
+    transport = paramiko.Transport((ssh_config["hostname"], ssh_config["port"]))
+    transport.connect(username=ssh_config["username"], password=ssh_config["password"])
+    sftp = paramiko.SFTPClient.from_transport(transport)
+
+    for file_name in os.listdir("bulletins"):
+        local_path = os.path.join("bulletins", file_name)
+        remote_path = f"/home/dgadmin/{file_name}"
+        sftp.put(local_path, remote_path)
+        print(f"i1DT - Uploaded {file_name}")
+        os.remove(local_path)
+        if not ssh_connected:
+            connect_ssh()
+
+        time.sleep(0.5)
+        send_command(f"runomni /twc/util/loadSCMTconfig.pyc {remote_path}")
+
+    send_command("rm /home/dgadmin/BULLETIN_*")
+    sftp.close()
+    transport.close()
+
+def load_radar():
+    send_command("rm -f /twc/data/volatile/images/radar/us/*") # delete expired radar frames
+    send_command("rm /home/dgadmin/RADARLOAD_*") # delete expired radar load scripts
+    transport = paramiko.Transport((ssh_config["hostname"], ssh_config["port"]))
+    transport.connect(username=ssh_config["username"], password=ssh_config["password"])
+    sftp = paramiko.SFTPClient.from_transport(transport)
+
+    for file_name in os.listdir("radar"): # upload radar frames
+            local_path = os.path.join("radar", file_name)
+            remote_path = f"/twc/data/volatile/images/radar/us/{file_name}"
+            sftp.put(local_path, remote_path)
+            print(f"i1DT - Radar {file_name} Uploaded")
+            os.remove(local_path)
+
+    time.sleep(0.5)
+
+    for file_name in os.listdir("radar_temp"): # radar load script handler
+            local_path = os.path.join("radar_temp", file_name)
+            remote_path = f"/home/dgadmin/{file_name}"
+            sftp.put(local_path, remote_path)
+            print(f"i1DT - Radar Load Script {file_name}")
+            os.remove(local_path)
+            time.sleep(0.5)
+            send_command(f"runomni /twc/util/loadSCMTconfig.pyc {remote_path}")
+            
+    # cleanup
+    shutil.rmtree("radar_temp", ignore_errors=True)
 
 def start_schedules():
     config = get_config()
@@ -162,8 +217,25 @@ def start_schedules():
             upload_and_run_temp_files()
             time.sleep(1800)
 
+    def radar_loop():
+        while True:
+            time.sleep(15)
+            radar.makeRadarImages()
+            radar.gen_radarload_files()
+            load_radar()
+            time.sleep(3600)
+
+    def bulletin_loop():
+        while True:
+            bulletin.gen_bulletin()
+            load_bulletins()
+            time.sleep(300)
+
+
     threading.Thread(target=run_cc, daemon=True).start()
     threading.Thread(target=run_hourly_daily_daypart, daemon=True).start()
+    threading.Thread(target=bulletin_loop, daemon=True).start()
+    threading.Thread(target=radar_loop, daemon=True).start()
 
     print("i1DT - Data generation & upload schedules started.")
 

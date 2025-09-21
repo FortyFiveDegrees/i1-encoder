@@ -338,8 +338,8 @@ async def makeRadarImages():
         finished.append(img)
 
     commands = []
-
-    os.rmdir("./.temp/")
+ 
+    shutil.rmtree("./.temp/")
     return
 
     

@@ -188,8 +188,8 @@ def load_radar():
             sftp.put(local_path, remote_path)
             print(f"i1DT - Radar Load Script {file_name}")
             os.remove(local_path)
-            send_command(f"runomni /twc/util/loadSCMTconfig.pyc {remote_path}")
             time.sleep(0.5)
+            send_command(f"runomni /twc/util/loadSCMTconfig.pyc {remote_path}")
             
     # cleanup
     shutil.rmtree("radar_temp", ignore_errors=True)

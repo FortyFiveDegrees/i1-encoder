@@ -1,0 +1,67 @@
+{
+    "ImageSequenceDefs": {
+        "Radar-US": {
+            "LowerLeftLong": -126.834935,
+            "LowerLeftLat": 22.197152,
+            "UpperRightLong": -65.178922,
+            "UpperRightLat": 50.231604,
+            "VerticalAdjustment": 1.1985928,
+            "OriginalImageWidth": 4096,
+            "OriginalImageHeight": 1968,
+            "MaxImages": 36,
+            "Gap": 4,
+            "ImagesInterval": 300,
+            "Expiration": 10800,
+            "DeletePadding": 1800,
+            "FileNameDateFormat": "yyyyMMddHHmm"
+        },
+
+        "Radar-PR": {
+            "LowerLeftLong": -162.633484,
+            "LowerLeftLat": 16.569253,
+            "UpperRightLong": -151.702146,
+            "UpperRightLat": 24.773036,
+            "VerticalAdjustment": 1.199,
+            "OriginalImageWidth": 1300,
+            "OriginalImageHeight": 600,
+            "MaxImages": 12,
+            "Gap": 4,
+            "ImagesInterval": 900,
+            "Expiration": 10800,
+            "DeletePadding": 1800,
+            "FileNameDateFormat": "yyyyMMddHHmm"
+        },
+
+        "Radar-HI": {
+            "LowerLeftLong": -73.427336,
+            "LowerLeftLat": 14.558724,
+            "UpperRightLong": -59.620365,
+            "UpperRightLat": 21.826707,
+            "VerticalAdjustment": 1.1985928,
+            "OriginalImageWidth": 1500,
+            "OriginalImageHeight": 1500,
+            "MaxImages": 36,
+            "Gap": 4,
+            "ImagesInterval": 300,
+            "Expiration": 10800,
+            "DeletePadding": 1800,
+            "FileNameDateFormat": "yyyyMMddHHmm"
+        },
+
+        "Radar-AK": {
+            "LowerLeftLong": -178.505920,
+            "LowerLeftLat": 51.379081,
+            "UpperRightLong": -124.517227,
+            "UpperRightLat": 71.504753,
+            "VerticalAdjustment": 1.0175897,
+            "OriginalImageWidth": 2000,
+            "OriginalImageHeight": 1600,
+            "MaxImages": 36,
+            "Gap": 4,
+            "ImagesInterval": 300,
+            "Expiration": 10800,
+            "DeletePadding": 1800,
+            "FileNameDateFormat": "yyyyMMddHHmm"
+        }
+    }
+}

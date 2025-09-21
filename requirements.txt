@@ -4,3 +4,7 @@ schedule
 datetime
 beautifulsoup4
 pillow
+coloredlogs
+wand
+bit
+asyncio

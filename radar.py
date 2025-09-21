@@ -14,7 +14,7 @@ from shutil import rmtree
 from PIL import Image as PILImage
 from wand.image import Image as wandImage
 from wand.color import Color
-
+import configparser; api_key = (lambda cp=configparser.ConfigParser(): (cp.read('config.ini'), cp.get('ENV', 'TWCAPI'))[-1])()
 
 radarType = "Radar-US"
 
@@ -39,7 +39,7 @@ def getValidTimestamps(boundaries:ImageBoundaries) -> list:
     l.info("Getting timestamps for the radar..")
     times = []
 
-    url = "https://api.weather.com/v3/TileServer/series/productSet?apiKey=e1f10a1e78da46f5b10a1e78da96f525&filter=twcRadarMosaic"
+    url = f"https://api.weather.com/v3/TileServer/series/productSet?apiKey={api_key}&filter=twcRadarMosaic"
     response = requests.get(url).json()
 
     for t in range(0, len(response['seriesInfo']['twcRadarMosaic']['series'])):
@@ -253,7 +253,7 @@ def makeRadarImages():
         
         if not exists(full_path):
             for c in range(0, len(combinedCoordinates)):
-                urls.append(f"https://api.weather.com/v3/TileServer/tile?product=twcRadarMosaic&ts={str(times[i])}&xyz={combinedCoordinates[c].x}:{combinedCoordinates[c].y}:6&apiKey=e1f10a1e78da46f5b10a1e78da96f525")
+                urls.append(f"https://api.weather.com/v3/TileServer/tile?product=twcRadarMosaic&ts={str(times[i])}&xyz={combinedCoordinates[c].x}:{combinedCoordinates[c].y}:6&apiKey={api_key}")
                 paths.append(f"./.temp/tiles/{times[i]}")
                 filenames.append(f"{times[i]}_{combinedCoordinates[c].x}_{combinedCoordinates[c].y}.png")
 

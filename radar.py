@@ -248,7 +248,7 @@ def makeRadarImages():
     for i in range(0, len(times)):
         issue_time = times[i]
         three_hours_later_time = issue_time + (3 * 60 * 60)
-        new_filename = f"{issue_time}.{three_hours_later_time}.tiff"
+        new_filename = f"{issue_time}.{three_hours_later_time}.tif"
         full_path = f"{OUTPUT_DIR}{new_filename}"
         
         if not exists(full_path):
@@ -286,7 +286,7 @@ def makeRadarImages():
     for i in range(0, len(imgsToGenerate)):
         issue_time = times[i]
         three_hours_later_time = issue_time + (3 * 60 * 60)
-        new_filename = f"{issue_time}.{three_hours_later_time}.tiff"
+        new_filename = f"{issue_time}.{three_hours_later_time}.tif"
         full_path = f"{OUTPUT_DIR}{new_filename}"
         
         tile_dir = f'./.temp/tiles/{times[i]}'

@@ -1,4 +1,4 @@
-paramiko
+paramiko==3.5.1
 requests
 schedule
 datetime

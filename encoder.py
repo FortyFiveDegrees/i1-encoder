@@ -167,30 +167,37 @@ def load_bulletins():
     transport.close()
 
 def load_radar():
-    send_command("rm -f /twc/data/volatile/images/radar/us/*") # delete expired radar frames
-    send_command("rm /home/dgadmin/RADARLOAD_*") # delete expired radar load scripts
+    send_command("rm -f /twc/data/volatile/images/radar/us/*")  # delete expired radar frames
+    send_command("rm /home/dgadmin/RADARLOAD_*")  # delete expired radar load scripts
     transport = paramiko.Transport((ssh_config["hostname"], ssh_config["port"]))
     transport.connect(username=ssh_config["username"], password=ssh_config["password"])
     sftp = paramiko.SFTPClient.from_transport(transport)
 
-    for file_name in os.listdir("radar"): # upload radar frames
-            local_path = os.path.join("radar", file_name)
-            remote_path = f"/twc/data/volatile/images/radar/us/{file_name}"
-            sftp.put(local_path, remote_path)
-            print(f"i1DT - Radar {file_name} Uploaded")
-            os.remove(local_path)
+    for file_name in os.listdir("radar"):  # upload radar frames
+        local_path = os.path.join("radar", file_name)
+        remote_path = f"/twc/data/volatile/images/radar/us/{file_name}"
+        sftp.put(local_path, remote_path)
+        print(f"i1DT - Radar {file_name} Uploaded")
+        os.remove(local_path)
 
     time.sleep(0.5)
 
-    for file_name in os.listdir("radar_temp"): # radar load script handler
-            local_path = os.path.join("radar_temp", file_name)
-            remote_path = f"/home/dgadmin/{file_name}"
-            sftp.put(local_path, remote_path)
-            print(f"i1DT - Radar Load Script {file_name}")
-            os.remove(local_path)
-            time.sleep(0.5)
-            send_command(f"runomni /twc/util/loadSCMTconfig.pyc {remote_path}")
-            
+    radarload_files = os.listdir("radar_temp")
+    uploaded_paths = []
+
+    for file_name in radarload_files:  # upload radar load scripts
+        local_path = os.path.join("radar_temp", file_name)
+        remote_path = f"/home/dgadmin/{file_name}"
+        sftp.put(local_path, remote_path)
+        print(f"i1DT - Radar Load Script {file_name}")
+        uploaded_paths.append(remote_path)
+        os.remove(local_path)
+        time.sleep(0.5)
+
+    # runomni on all files after upload
+    for remote_path in uploaded_paths:
+        send_command(f"runomni /twc/util/loadSCMTconfig.pyc {remote_path}")
+
     # cleanup
     shutil.rmtree("radar_temp", ignore_errors=True)
 

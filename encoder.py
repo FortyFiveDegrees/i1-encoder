@@ -230,7 +230,7 @@ def start_schedules():
             cc.main()
             upload_and_run_temp_files()
             sync_time() # run it here as sort of a heartbeat? (like how TWC sends down heartbeats to keep units in time-sync)
-            time.sleep(600)
+            time.sleep(300)
 
     def run_hourly_daily_daypart():
         while True:

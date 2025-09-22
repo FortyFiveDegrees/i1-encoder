@@ -18,7 +18,9 @@ i1 Encoder Setup
    - Open CMD inside the i1-encoder folder and run the command
      py encoder.py
 
-   Enjoy!
+4. Enjoy!
+
+
 
 Please feel free to make pull requests/issues.
 

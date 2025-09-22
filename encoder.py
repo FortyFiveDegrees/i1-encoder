@@ -6,6 +6,7 @@ import time
 import threading
 from datetime import datetime, timedelta
 import asyncio
+import shutil
 
 import cc
 import hourly
@@ -145,7 +146,6 @@ def upload_and_run_temp_files():
 
 def load_bulletins():
     ensure_temp_dir()
-    send_command("rm /home/dgadmin/BULLETIN_*")
     transport = paramiko.Transport((ssh_config["hostname"], ssh_config["port"]))
     transport.connect(username=ssh_config["username"], password=ssh_config["password"])
     sftp = paramiko.SFTPClient.from_transport(transport)

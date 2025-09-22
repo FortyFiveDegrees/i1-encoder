@@ -13,14 +13,16 @@ i1 Encoder Setup
 2. Install Package Requirements.
    - Open CMD inside the i1-encoder folder and run the command
 
-     py -3 -m pip install -r requirements.txt
+     *py -3 -m pip install -r requirements.txt*
      
 3. Running the Encoder
    - Open CMD inside the i1-encoder folder and run the command
 
-     py encoder.py
+     *py encoder.py*
 
+4. Enjoy!
 
+---------------
 
 
 Please feel free to make pull requests/issues.

@@ -242,12 +242,21 @@ def start_schedules():
             time.sleep(1800)
 
     def radar_loop():
+        # First run - send initial 36 frames
+        print("i1DT - Starting initial radar sequence (36 frames)")
+        time.sleep(15)
+        radar.makeRadarImages()
+        radar.gen_radarload_files()
+        load_radar()
+        print("i1DT - Initial radar sequence complete, switching to 5-minute updates")
+        
+        # Continuous loop - send new frame every 5 minutes
         while True:
-            time.sleep(15)
-            radar.makeRadarImages()
+            time.sleep(300)  # 5 minutes = 300 seconds
+            print("i1DT - Updating radar with latest frame")
+            radar.makeLatestRadarImage()
             radar.gen_radarload_files()
             load_radar()
-            time.sleep(3600)
 
     def bulletin_loop():
         while True:

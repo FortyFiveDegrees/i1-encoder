@@ -7,6 +7,7 @@ import time as epochTime
 import requests
 import logging,coloredlogs
 import shutil
+from datetime import datetime
 
 from os import path, mkdir, listdir, remove, cpu_count
 import os
@@ -60,6 +61,31 @@ def getValidTimestamps(boundaries:ImageBoundaries) -> list:
             times.append(time)
 
     return times
+
+def getLatestRadarTimestamp(boundaries:ImageBoundaries) -> int:
+    """Gets the latest valid UNIX timestamp for the TWCRadarMosaic product """
+    l.info("Getting latest timestamp for radar update..")
+
+    url = f"https://api.weather.com/v3/TileServer/series/productSet?apiKey={api_key}&filter=twcRadarMosaic"
+    response = requests.get(url).json()
+
+    # Get the most recent frame (index 0)
+    if len(response['seriesInfo']['twcRadarMosaic']['series']) > 0:
+        latest_time = response['seriesInfo']['twcRadarMosaic']['series'][0]['ts']
+        
+        # Check if it's at the correct interval
+        if (latest_time % boundaries.ImageInterval != 0):
+            l.debug(f"Latest timestamp {latest_time} not at correct interval.")
+            return None
+
+        # Check if it's not expired
+        if (latest_time < (datetime.utcnow().timestamp() - epochTime.time()) / 1000 - boundaries.Expiration):
+            l.debug(f"Latest timestamp {latest_time} is expired.")
+            return None
+
+        return latest_time
+    
+    return None
 
 def downloadRadarTile(url, p, fn):
     img = requests.get(url, stream=True)
@@ -347,6 +373,111 @@ def makeRadarImages():
         bit.sendFile([finished[i]], [commands[i]], 1, 0)
 
     l.info("Downloaded and sent Regional Radar frames!")
+
+def makeLatestRadarImage():
+    """ Creates the latest radar frame for continuous updates """
+    l.info("Downloading latest radar frame for update...")
+    
+    boundaries = getImageBoundaries()
+    latest_time = getLatestRadarTimestamp(boundaries)
+    
+    if latest_time is None:
+        l.info("No new radar frame available for update.")
+        return
+    
+    # Check if we already have this frame
+    issue_time = latest_time
+    three_hours_later_time = issue_time + (3 * 60 * 60)
+    new_filename = f"{issue_time}.{three_hours_later_time}.tif"
+    full_path = f"{OUTPUT_DIR}{new_filename}"
+    
+    if exists(full_path):
+        l.info(f"Latest radar frame {latest_time} already exists, skipping.")
+        return
+        
+    combinedCoordinates = []
+    
+    upperRight:LatLong = boundaries.GetUpperRight()
+    lowerLeft:LatLong = boundaries.GetLowerLeft()
+    upperLeft:LatLong = boundaries.GetUpperLeft()
+    lowerRight:LatLong = boundaries.GetLowerRight()
+
+    CalculateBounds(upperRight, lowerLeft, upperLeft, lowerRight)
+    
+    # Collect coordinates for the frame tiles
+    for y in range(yStart, yEnd):
+        if y <= yEnd:
+            for x in range(xStart, xEnd):
+                if x <= xEnd:
+                    combinedCoordinates.append(Point(x,y))
+
+    # Create urls, paths, and filenames to download tiles for the latest frame
+    urls = []
+    paths = []
+    filenames = []
+    
+    for c in range(0, len(combinedCoordinates)):
+        urls.append(f"https://api.weather.com/v3/TileServer/tile?product=twcRadarMosaic&ts={str(latest_time)}&xyz={combinedCoordinates[c].x}:{combinedCoordinates[c].y}:6&apiKey={api_key}")
+        paths.append(f"./.temp/tiles/{latest_time}")
+        filenames.append(f"{latest_time}_{combinedCoordinates[c].x}_{combinedCoordinates[c].y}.png")
+
+    l.debug(f"Downloading {len(urls)} tiles for latest frame")
+    if len(urls) != 0 and len(urls) >= 6:
+        with Pool(cpu_count() - 1) as p:
+            p.starmap(downloadRadarTile, zip(urls, paths, filenames))
+            p.close()
+            p.join()
+    elif len(urls) < 6 and len(urls) != 0:
+        with Pool(len(urls)) as p:
+            p.starmap(downloadRadarTile, zip(urls, paths, filenames))
+            p.close()
+            p.join()
+    elif len(urls) == 0:
+        l.info("No tiles to download for latest frame.")
+        return
+
+    # Stitch the latest frame together
+    latest_img = PILImage.new("RGB", (imgW, imgH))
+    tile_dir = f'./.temp/tiles/{latest_time}'
+    
+    if exists(tile_dir):
+        l.debug(f"Generating latest frame for {latest_time}")
+        for c in combinedCoordinates:
+            tile_path = f"{tile_dir}/{latest_time}_{c.x}_{c.y}.png"
+
+            xPlacement = (c.x - xStart) * 256
+            yPlacement = (c.y - yStart) * 256
+
+            placeTile = PILImage.open(tile_path)
+            latest_img.paste(placeTile, (xPlacement, yPlacement))
+        
+        # Save the stitched frame
+        latest_img.save(full_path, compression = 'tiff_lzw')
+        
+        # Remove the tileset as we don't need it anymore
+        rmtree(tile_dir)
+        
+        # Process the latest frame
+        l.info("Processing latest radar frame")
+        
+        # Crop the radar image
+        img_raw = wandImage(filename=full_path)
+        img_raw.crop(upperLeftX, upperLeftY, width = int(lowerRightX - upperLeftX), height = int(lowerRightY - upperLeftY))
+        img_raw.compression = 'lzw'
+        img_raw.save(filename=full_path)
+        
+        # Resize using PIL
+        imgPIL = PILImage.open(full_path)
+        imgPIL = imgPIL.resize((boundaries.OGImgW, boundaries.OGImgH), 0)
+        imgPIL.save(full_path)
+
+        convertPaletteToWXPro(full_path)
+        
+        l.info(f"Latest radar frame {latest_time} processed successfully")
+    
+    # Clean up temp directory
+    if exists("./.temp/"):
+        shutil.rmtree("./.temp/")
 
 def gen_radarload_files():
     input_dir = "radar"

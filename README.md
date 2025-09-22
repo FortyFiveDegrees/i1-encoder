@@ -5,6 +5,21 @@ This encoder was made by Dalk with help from April (mewtek), Flybotworld (Classi
 
 This uses SSH to communicate with the i1 to send/receive data.
 
+ENCODER SETUP
+---------------
+
+1. Update the hostname and password in Config.json
+   
+2. Install Package Requirements.
+   - Open CMD inside the i1-encoder folder and run the command
+     py -3 -m pip install -r requirements.txt
+     
+3. Running the Encoder
+   - Open CMD inside the i1-encoder folder and run the command
+     py encoder.py
+
+   Enjoy!
+
 Please feel free to make pull requests/issues.
 
 By using 45 Degrees' i1 Encoder, you agree to the AGPL 3.0 license (LICENSE) included in the source code. 

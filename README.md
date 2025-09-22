@@ -5,7 +5,7 @@ This encoder was made by Dalk with help from April (mewtek), Flybotworld (Classi
 
 This uses SSH to communicate with the i1 to send/receive data.
 
-ENCODER SETUP
+i1 Encoder Setup
 ---------------
 
 1. Update the hostname and password in Config.json

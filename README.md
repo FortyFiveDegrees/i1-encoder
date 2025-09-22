@@ -29,4 +29,3 @@ Please feel free to make pull requests/issues.
 
 By using 45 Degrees' i1 Encoder, you agree to the AGPL 3.0 license (LICENSE) included in the source code. 
 
-WARNING: The radar generation is unoptimized AF and WILL slog your computer down like your running Prime95.

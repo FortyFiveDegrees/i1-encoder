@@ -31,36 +31,6 @@ def ensure_radar_dir():
     if not os.path.exists("radar"):
         os.makedirs("radar")
 
-def _sftp_connect():
-    transport = paramiko.Transport((ssh_config["hostname"], ssh_config["port"]))
-    transport.connect(username=ssh_config["username"], password=ssh_config["password"])
-    sftp = paramiko.SFTPClient.from_transport(transport)
-    return transport, sftp
-
-def _get_dgadmin_home(sftp):
-    for path in ["/home/dgadmin", "/usr/home/dgadmin"]:
-        try:
-            sftp.listdir(path)
-            return path
-        except Exception:
-            continue
-    return "/home/dgadmin"
-
-def _clear_remote_files(prefixes):
-    transport, sftp = _sftp_connect()
-    try:
-        remote_home = _get_dgadmin_home(sftp)
-        for name in sftp.listdir(remote_home):
-            if any(name.startswith(prefix) for prefix in prefixes):
-                try:
-                    sftp.remove(f"{remote_home}/{name}")
-                    print(f"i1DT - Removed old remote file: {name}")
-                except Exception as e:
-                    print(f"i1DT - Failed removing {name}: {e}")
-    finally:
-        sftp.close()
-        transport.close()
-
 def connect_ssh():
     global ssh_client, shell, ssh_connected
     ssh_client = paramiko.SSHClient()
@@ -176,53 +146,77 @@ def upload_and_run_temp_files():
 
 def load_bulletins():
     ensure_temp_dir()
-    _clear_remote_files(["BULLETIN_"])
-    transport, sftp = _sftp_connect()
-    try:
-        remote_home = _get_dgadmin_home(sftp)
-        for file_name in os.listdir("bulletins"):
-            local_path = os.path.join("bulletins", file_name)
-            remote_path = f"{remote_home}/{file_name}"
-            sftp.put(local_path, remote_path)
-            print(f"i1DT - Uploaded {file_name}")
-            os.remove(local_path)
-            if not ssh_connected:
-                connect_ssh()
+    transport = paramiko.Transport((ssh_config["hostname"], ssh_config["port"]))
+    transport.connect(username=ssh_config["username"], password=ssh_config["password"])
+    sftp = paramiko.SFTPClient.from_transport(transport)
 
-            time.sleep(0.5)
-            send_command(f"runomni /twc/util/loadSCMTconfig.pyc {remote_path}")
-    finally:
-        sftp.close()
-        transport.close()
-
-def load_radar():
-    _clear_remote_files(["RADARLOAD_"])
-    transport, sftp = _sftp_connect()
+    # Clear old BULLETIN files from remote directory
     try:
-        for file_name in os.listdir("radar"): # upload radar frames
-                local_path = os.path.join("radar", file_name)
-                remote_path = f"/twc/data/volatile/images/radar/us/{file_name}"
-                sftp.put(local_path, remote_path)
-                print(f"i1DT - Radar {file_name} Uploaded")
-                os.remove(local_path)
+        remote_files = sftp.listdir("/usr/home/dgadmin")
+        bulletin_files = [f for f in remote_files if f.startswith("BULLETIN")]
+        for old_file in bulletin_files:
+            try:
+                sftp.remove(f"/usr/home/dgadmin/{old_file}")
+                print(f"i1DT - Removed old bulletin file: {old_file}")
+            except Exception as e:
+                print(f"i1DT - Warning: Could not remove {old_file}: {e}")
+    except Exception as e:
+        print(f"i1DT - Warning: Could not list remote directory: {e}")
+
+    for file_name in os.listdir("bulletins"):
+        local_path = os.path.join("bulletins", file_name)
+        remote_path = f"/usr/home/dgadmin/{file_name}"
+        sftp.put(local_path, remote_path)
+        print(f"i1DT - Uploaded {file_name}")
+        os.remove(local_path)
+        if not ssh_connected:
+            connect_ssh()
 
         time.sleep(0.5)
+        send_command(f"runomni /twc/util/loadSCMTconfig.pyc {remote_path}")
 
-        if os.path.isdir("radar_temp"):
-            remote_home = _get_dgadmin_home(sftp)
-            for file_name in os.listdir("radar_temp"): # radar load script handler
-                    local_path = os.path.join("radar_temp", file_name)
-                    remote_path = f"{remote_home}/{file_name}"
-                    sftp.put(local_path, remote_path)
-                    print(f"i1DT - Radar Load Script {file_name}")
-                    os.remove(local_path)
-                    time.sleep(0.5)
-                    send_command(f"runomni /twc/util/loadSCMTconfig.pyc {remote_path}")
-    finally:
-        sftp.close()
-        transport.close()
-        # cleanup
-        shutil.rmtree("radar_temp", ignore_errors=True)
+
+    sftp.close()
+    transport.close()
+
+def load_radar():
+    transport = paramiko.Transport((ssh_config["hostname"], ssh_config["port"]))
+    transport.connect(username=ssh_config["username"], password=ssh_config["password"])
+    sftp = paramiko.SFTPClient.from_transport(transport)
+
+    # Clear old RADARLOAD files from remote directory
+    try:
+        remote_files = sftp.listdir("/usr/home/dgadmin")
+        radarload_files = [f for f in remote_files if f.startswith("RADARLOAD")]
+        for old_file in radarload_files:
+            try:
+                sftp.remove(f"/usr/home/dgadmin/{old_file}")
+                print(f"i1DT - Removed old radar load file: {old_file}")
+            except Exception as e:
+                print(f"i1DT - Warning: Could not remove {old_file}: {e}")
+    except Exception as e:
+        print(f"i1DT - Warning: Could not list remote directory: {e}")
+
+    for file_name in os.listdir("radar"): # upload radar frames
+            local_path = os.path.join("radar", file_name)
+            remote_path = f"/twc/data/volatile/images/radar/us/{file_name}"
+            sftp.put(local_path, remote_path)
+            print(f"i1DT - Radar {file_name} Uploaded")
+            os.remove(local_path)
+
+    time.sleep(0.5)
+
+    for file_name in os.listdir("radar_temp"): # radar load script handler
+            local_path = os.path.join("radar_temp", file_name)
+            remote_path = f"/usr/home/dgadmin/{file_name}"
+            sftp.put(local_path, remote_path)
+            print(f"i1DT - Radar Load Script {file_name}")
+            os.remove(local_path)
+            time.sleep(0.5)
+            send_command(f"runomni /twc/util/loadSCMTconfig.pyc {remote_path}")
+            
+    # cleanup
+    shutil.rmtree("radar_temp", ignore_errors=True)
 
 def start_schedules():
     config = get_config()
@@ -275,3 +269,4 @@ if __name__ == "__main__":
     start_schedules()
     while True:
         time.sleep(1)
+

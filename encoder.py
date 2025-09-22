@@ -6,6 +6,7 @@ import time
 import threading
 from datetime import datetime, timedelta
 import asyncio
+import shutil
 
 import cc
 import hourly
@@ -145,14 +146,26 @@ def upload_and_run_temp_files():
 
 def load_bulletins():
     ensure_temp_dir()
-    send_command("rm /home/dgadmin/BULLETIN_*")
     transport = paramiko.Transport((ssh_config["hostname"], ssh_config["port"]))
     transport.connect(username=ssh_config["username"], password=ssh_config["password"])
     sftp = paramiko.SFTPClient.from_transport(transport)
 
+    # Clear old BULLETIN files from remote directory
+    try:
+        remote_files = sftp.listdir("/usr/home/dgadmin")
+        bulletin_files = [f for f in remote_files if f.startswith("BULLETIN")]
+        for old_file in bulletin_files:
+            try:
+                sftp.remove(f"/usr/home/dgadmin/{old_file}")
+                print(f"i1DT - Removed old bulletin file: {old_file}")
+            except Exception as e:
+                print(f"i1DT - Warning: Could not remove {old_file}: {e}")
+    except Exception as e:
+        print(f"i1DT - Warning: Could not list remote directory: {e}")
+
     for file_name in os.listdir("bulletins"):
         local_path = os.path.join("bulletins", file_name)
-        remote_path = f"/home/dgadmin/{file_name}"
+        remote_path = f"/usr/home/dgadmin/{file_name}"
         sftp.put(local_path, remote_path)
         print(f"i1DT - Uploaded {file_name}")
         os.remove(local_path)
@@ -162,16 +175,27 @@ def load_bulletins():
         time.sleep(0.5)
         send_command(f"runomni /twc/util/loadSCMTconfig.pyc {remote_path}")
 
-    send_command("rm /home/dgadmin/BULLETIN_*")
+
     sftp.close()
     transport.close()
 
 def load_radar():
-    send_command("rm -f /twc/data/volatile/images/radar/us/*") # delete expired radar frames
-    send_command("rm /home/dgadmin/RADARLOAD_*") # delete expired radar load scripts
     transport = paramiko.Transport((ssh_config["hostname"], ssh_config["port"]))
     transport.connect(username=ssh_config["username"], password=ssh_config["password"])
     sftp = paramiko.SFTPClient.from_transport(transport)
+
+    # Clear old RADARLOAD files from remote directory
+    try:
+        remote_files = sftp.listdir("/usr/home/dgadmin")
+        radarload_files = [f for f in remote_files if f.startswith("RADARLOAD")]
+        for old_file in radarload_files:
+            try:
+                sftp.remove(f"/usr/home/dgadmin/{old_file}")
+                print(f"i1DT - Removed old radar load file: {old_file}")
+            except Exception as e:
+                print(f"i1DT - Warning: Could not remove {old_file}: {e}")
+    except Exception as e:
+        print(f"i1DT - Warning: Could not list remote directory: {e}")
 
     for file_name in os.listdir("radar"): # upload radar frames
             local_path = os.path.join("radar", file_name)
@@ -184,7 +208,7 @@ def load_radar():
 
     for file_name in os.listdir("radar_temp"): # radar load script handler
             local_path = os.path.join("radar_temp", file_name)
-            remote_path = f"/home/dgadmin/{file_name}"
+            remote_path = f"/usr/home/dgadmin/{file_name}"
             sftp.put(local_path, remote_path)
             print(f"i1DT - Radar Load Script {file_name}")
             os.remove(local_path)
@@ -218,12 +242,21 @@ def start_schedules():
             time.sleep(1800)
 
     def radar_loop():
+        # First run - send initial 36 frames
+        print("i1DT - Starting initial radar sequence (36 frames)")
+        time.sleep(15)
+        radar.makeRadarImages()
+        radar.gen_radarload_files()
+        load_radar()
+        print("i1DT - Initial radar sequence complete, switching to 5-minute updates")
+        
+        # Continuous loop - send new frame every 5 minutes
         while True:
-            time.sleep(15)
-            radar.makeRadarImages()
+            time.sleep(300)  # 5 minutes = 300 seconds
+            print("i1DT - Updating radar with latest frame")
+            radar.makeLatestRadarImage()
             radar.gen_radarload_files()
             load_radar()
-            time.sleep(3600)
 
     def bulletin_loop():
         while True:
@@ -245,3 +278,4 @@ if __name__ == "__main__":
     start_schedules()
     while True:
         time.sleep(1)
+

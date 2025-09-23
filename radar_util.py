@@ -54,8 +54,8 @@ def WorldCoordinateToTile(coord: Point) -> Point:
     scale = 1 << 6
 
     return Point(
-        x = math.floor(coord.x * scale / 255),
-        y = math.floor(coord.y * scale / 255)
+        x = math.floor(coord.x * scale / 256),
+        y = math.floor(coord.y * scale / 256)
     )
 
 def WorldCoordinateToPixel(coord: Point) -> Point:

@@ -197,6 +197,33 @@ def load_radar():
     except Exception as e:
         print(f"i1DT - Warning: Could not list remote directory: {e}")
 
+    # Clear expired radar frames from radar image directory
+    try:
+        radar_image_files = sftp.listdir("/twc/data/volatile/images/radar/us")
+        current_time = time.time()
+        
+        for radar_file in radar_image_files:
+            if radar_file.endswith(".tif"):
+                try:
+                    # Extract timestamp from filename (format: timestamp.expiration.tif)
+                    parts = radar_file.split(".")
+                    if len(parts) >= 3:
+                        issue_timestamp = int(parts[0])
+                        expiration_timestamp = int(parts[1])
+                        
+                        # Check if the frame has expired
+                        if current_time > expiration_timestamp:
+                            sftp.remove(f"/twc/data/volatile/images/radar/us/{radar_file}")
+                            print(f"i1DT - Removed expired radar frame: {radar_file}")
+                        
+                except (ValueError, IndexError) as e:
+                    print(f"i1DT - Warning: Could not parse timestamp from {radar_file}: {e}")
+                except Exception as e:
+                    print(f"i1DT - Warning: Could not remove expired radar frame {radar_file}: {e}")
+                    
+    except Exception as e:
+        print(f"i1DT - Warning: Could not access radar image directory: {e}")
+
     for file_name in os.listdir("radar"): # upload radar frames
             local_path = os.path.join("radar", file_name)
             remote_path = f"/twc/data/volatile/images/radar/us/{file_name}"

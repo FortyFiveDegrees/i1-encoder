@@ -23,7 +23,7 @@ i1 Encoder Setup
 4. Enjoy!
 
 
-Note: It Takes a few minutes for the i1 encoder to download all 36 Radar Frames on the first run. So give it time
+Note: It may Take a few minutes for the i1 encoder to start downloading all 36 Radar Frames when you first run the script. So give it time.
 
 ---------------
 

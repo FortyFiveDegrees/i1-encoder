@@ -49,9 +49,10 @@ def connect_ssh():
 
     def handle_output():
         while True:
+            password = ssh_config["password"]
             output = shell.recv(1024).decode()
             if "Password:" in output:
-                shell.send("i1\n")
+                shell.send(f"{password}\n")
 
     threading.Thread(target=handle_output, daemon=True).start()
     shell.send("su -l dgadmin\n")

@@ -63,7 +63,7 @@ def write_hourly_forecast_file(tecci_locations, api_key):
         if tecci_locations:
             first_county = tecci_locations[0][3]  # Get county from first location
             f.write(f"areaList = wxdata.getUGCInterestList('{first_county}', 'county')\n\n")
-            f.write("twccommon.Log.info(\"i1DT - Thanks for using the 45 Degres i1 Encoder.\")\n\n")
+            f.write("twccommon.Log.info(\"i1DT - Thanks for using the 45 Degrees i1 Encoder.\")\n\n")
             f.write("if not areaList:\n    abortMsg()\n\n")
 
         # THEN write time calculation
@@ -130,3 +130,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
